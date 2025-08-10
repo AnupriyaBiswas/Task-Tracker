@@ -16,7 +16,7 @@ export default function SignIn() {
   useEffect(() => {
     // Check current session immediately
     const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession()
+      const { data: { session } } = await supabase.auth.getSession()
 
       if (session?.user) {
         console.log('✅ User logged in:', session.user.email)
@@ -57,8 +57,10 @@ export default function SignIn() {
 
     if (error) {
       console.error('Login error:', error.message)
+      alert(`Login failed: ${error.message}`)
     }
   }
+
 
 
   if (loading) {
