@@ -81,7 +81,7 @@ export function TaskForm({ task, onSubmit, onCancel }: TaskFormProps) {
               <label className="block text-sm font-medium mb-1">Priority</label>
               <select
                 value={formData.priority}
-                onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as 'low' | 'medium' | 'high' }))}
                 className="w-full p-2 border rounded-md"
               >
                 <option value="low">Low</option>

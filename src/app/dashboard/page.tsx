@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,19 @@ export default function Dashboard() {
   const router = useRouter()
   const taskService = new TaskService()
 
+
+  // Move loadTasks outside useEffect
+  const loadTasks = useCallback(async () => {
+    try {
+      const data = await taskService.getTasks()
+      setTasks(data)
+    } catch (error) {
+      console.error('Error loading tasks:', error)
+    } finally {
+      setLoading(false)
+    }
+  }, [taskService])
+
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -36,18 +49,8 @@ export default function Dashboard() {
       }
     }
     checkUser()
-  }, [])
+  }, [router, supabase.auth, loadTasks]) // Add loadTasks to deps
 
-  const loadTasks = async () => {
-    try {
-      const data = await taskService.getTasks()
-      setTasks(data)
-    } catch (error) {
-      console.error('Error loading tasks:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCreateTask = async (formData: TaskFormData) => {
     try {
