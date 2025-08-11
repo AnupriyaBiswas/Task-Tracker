@@ -44,3 +44,170 @@ A modern, intuitive task management application built with Next.js 15, Supabase,
 
 ### 1. Clone the repository
 
+git clone https://github.com/yourusername/tu-dum-task-tracker.git
+cd tu-dum-task-tracker
+
+
+### 2. Install dependencies
+
+npm install
+or
+yarn install
+
+
+### 3. Set up Supabase
+
+1. Create a new Supabase project
+2. Run the following SQL in your Supabase SQL Editor:
+
+-- Create profiles table
+CREATE TABLE profiles (
+id UUID REFERENCES auth.users(id) PRIMARY KEY,
+email TEXT,
+name TEXT,
+avatar_url TEXT,
+created_at TIMESTAMPTZ DEFAULT NOW(),
+updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create tasks table
+CREATE TABLE tasks (
+id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+title TEXT NOT NULL,
+description TEXT,
+status TEXT DEFAULT 'todo' CHECK (status IN ('todo', 'in-progress', 'done')),
+priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
+category TEXT,
+due_date TIMESTAMPTZ,
+created_at TIMESTAMPTZ DEFAULT NOW(),
+updated_at TIMESTAMPTZ DEFAULT NOW(),
+user_id UUID REFERENCES auth.users(id) NOT NULL
+);
+
+-- Enable RLS
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can view own tasks" ON tasks FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own tasks" ON tasks FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own tasks" ON tasks FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete own tasks" ON tasks FOR DELETE USING (auth.uid() = user_id);
+
+
+### 4. Configure Google OAuth
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add your Supabase callback URL: `https://your-project.supabase.co/auth/v1/callback`
+
+### 5. Environment Variables
+
+Create a `.env.local` file:
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+
+### 6. Run the development server
+
+npm run dev
+or
+yarn dev
+
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🏗️ Project Structure
+
+src/
+├── app/
+│ ├── auth/
+│ │ └── callback/ # OAuth callback handler
+│ ├── dashboard/
+│ │ ├── layout.tsx # Dashboard layout with navbar
+│ │ └── page.tsx # Main dashboard page
+│ ├── globals.css # Global styles
+│ ├── layout.tsx # Root layout
+│ └── page.tsx # Landing page
+├── components/
+│ ├── task/
+│ │ ├── TaskCard.tsx # Individual task component
+│ │ ├── TaskFilters.tsx # Filter controls
+│ │ └── TaskForm.tsx # Task creation/edit form
+│ └── ui/ # Reusable UI components
+├── hooks/
+│ └── useAuth.ts # Authentication hook
+├── lib/
+│ ├── supabase/
+│ │ └── client.ts # Supabase client setup
+│ └── tasks.ts # Task service layer
+└── types/
+└── database.ts # TypeScript types
+
+
+## 🎯 Key Features Breakdown
+
+### Authentication
+- Google OAuth integration
+- Persistent sessions
+- Secure logout with state cleanup
+
+### Task Management
+- **Create** - Add tasks with title, description, priority, category
+- **Read** - View all tasks with filtering and search
+- **Update** - Edit task details and status
+- **Delete** - Remove completed or unwanted tasks
+
+### UI/UX
+- **Glassmorphism Design** - Modern transparent backgrounds
+- **Responsive Layout** - Mobile-first approach
+- **Smooth Animations** - Hover effects and transitions
+- **Loading States** - User feedback during operations
+
+### Performance
+- **Server-Side Rendering** - Fast initial load
+- **Optimistic Updates** - Instant UI feedback
+- **Efficient Queries** - Row-level security with minimal data transfer
+
+## 🚀 Deployment
+
+### Deploy to Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically on push
+
+### Update Supabase Settings
+
+In your Supabase dashboard:
+- **Site URL:** `https://your-app.vercel.app`
+- **Redirect URLs:** `https://your-app.vercel.app/auth/callback`
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+
+## 🙏 Acknowledgments
+
+- [Next.js](https://nextjs.org/) for the amazing React framework
+- [Supabase](https://supabase.com/) for backend infrastructure
+- [Tailwind CSS](https://tailwindcss.com/) for utility-first styling
+- [Radix UI](https://www.radix-ui.com/) for accessible components
+- [Lucide](https://lucide.dev/) for beautiful icons
+
+
+**Built with ❤️**
+
+⭐ Star this repo if you found it helpful!
+
