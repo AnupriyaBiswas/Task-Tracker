@@ -25,15 +25,6 @@
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
   }
-  
-  * {
-    border-color: #e5e7eb; /* Direct hex instead of theme() */
-  }
-  
-  body {
-    background-color: #ffffff;
-    color: #111827;
-  }
 }
 
 @layer components {
