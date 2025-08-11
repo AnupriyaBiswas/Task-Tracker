@@ -8,7 +8,7 @@ import { TaskCard } from '@/components/task/TaskCard'
 import { TaskForm, TaskFormData } from '@/components/task/TaskForm'
 import { TaskFilters } from '@/components/task/TaskFilters'
 import { TaskService } from '@/lib/tasks'
-import { CheckCircle } from 'lucide-react' // Added missing import
+import { CheckCircle } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Task } from '@/types/database'
 
@@ -25,32 +25,84 @@ export default function Dashboard() {
   const router = useRouter()
   const taskService = new TaskService()
 
-
-  // Move loadTasks outside useEffect
+  // Enhanced loadTasks with better error handling
   const loadTasks = useCallback(async () => {
     try {
+      if (!user) {
+        console.log('No user found, skipping task load')
+        setLoading(false)
+        return
+      }
+
+      console.log('🚀 Dashboard: Loading tasks...')
       const data = await taskService.getTasks()
       setTasks(data)
+      console.log('✅ Dashboard: Tasks loaded successfully')
     } catch (error) {
-      console.error('Error loading tasks:', error)
+      console.error('❌ Dashboard: Error loading tasks:', error)
+      if (error instanceof Error && error.message.includes('Auth session missing')) {
+        setUser(null)
+        setTasks([])
+        router.push('/auth/signin')
+        return
+      }
+
+      if (error instanceof Error) {
+        alert(`Failed to load tasks: ${error.message}`)
+      } else {
+        alert('Failed to load tasks. Please check your connection.')
+      }
     } finally {
       setLoading(false)
     }
-  }, [taskService])
+  }, [taskService, user, router])
 
+  // Fixed auth state management
   useEffect(() => {
+    let mounted = true
+
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        setUser(session.user)
-        loadTasks()
-      } else {
-        router.push('/auth/signin')
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (mounted) {
+          if (session?.user) {
+            setUser(session.user)
+            loadTasks()
+          } else {
+            router.push('/auth/signin')
+          }
+        }
+      } catch (error) {
+        console.error('Session check failed:', error)
+        if (mounted) {
+          router.push('/auth/signin')
+        }
       }
     }
-    checkUser()
-  }, [router, supabase.auth, loadTasks]) // Add loadTasks to deps
 
+    checkUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
+
+      console.log('🔄 Auth event:', event)
+
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null)
+        setTasks([])
+      } else if (session?.user) {
+        setUser(session.user)
+        if (mounted) {
+          loadTasks()
+        }
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [router, supabase.auth, loadTasks])
 
   const handleCreateTask = async (formData: TaskFormData) => {
     try {
@@ -59,6 +111,7 @@ export default function Dashboard() {
       setShowForm(false)
     } catch (error) {
       console.error('Error creating task:', error)
+      alert('Failed to create task. Please try again.')
     }
   }
 
@@ -71,6 +124,7 @@ export default function Dashboard() {
       setEditingTask(null)
     } catch (error) {
       console.error('Error updating task:', error)
+      alert('Failed to update task. Please try again.')
     }
   }
 
@@ -80,6 +134,7 @@ export default function Dashboard() {
       setTasks(tasks.map(t => t.id === taskId ? { ...t, status } : t))
     } catch (error) {
       console.error('Error updating task status:', error)
+      alert('Failed to update task status. Please try again.')
     }
   }
 
@@ -91,12 +146,31 @@ export default function Dashboard() {
       setTasks(tasks.filter(t => t.id !== taskId))
     } catch (error) {
       console.error('Error deleting task:', error)
+      alert('Failed to delete task. Please try again.')
     }
   }
 
+  // Fixed sign out function
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/')
+    try {
+      console.log('🚪 Starting sign out process...')
+      
+      setUser(null)
+      setTasks([])
+      setLoading(true)
+      
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Supabase sign out error:', error)
+      }
+      
+      console.log('✅ Sign out completed, redirecting...')
+      window.location.href = '/auth/signin'
+      
+    } catch (error) {
+      console.error('Sign out process failed:', error)
+      window.location.href = '/auth/signin'
+    }
   }
 
   const filteredTasks = tasks.filter(task => {
@@ -117,94 +191,72 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <p className="text-gray-600">Loading your tasks...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          {/* Stats Dashboard */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{taskCounts.all}</div>
-                <div className="text-sm text-gray-500">Total Tasks</div>
+          {/* Enhanced Stats Dashboard */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50 p-8">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="text-3xl font-bold text-gray-900 mb-1">{taskCounts.all}</div>
+                <div className="text-sm text-gray-600 font-medium">Total Tasks</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{taskCounts.todo}</div>
-                <div className="text-sm text-gray-500">To Do</div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100">
+                <div className="text-3xl font-bold text-blue-600 mb-1">{taskCounts.todo}</div>
+                <div className="text-sm text-blue-600 font-medium">To Do</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{taskCounts['in-progress']}</div>
-                <div className="text-sm text-gray-500">In Progress</div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-100">
+                <div className="text-3xl font-bold text-orange-600 mb-1">{taskCounts['in-progress']}</div>
+                <div className="text-sm text-orange-600 font-medium">In Progress</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{taskCounts.done}</div>
-                <div className="text-sm text-gray-500">Completed</div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-100">
+                <div className="text-3xl font-bold text-green-600 mb-1">{taskCounts.done}</div>
+                <div className="text-sm text-green-600 font-medium">Completed</div>
               </div>
             </div>
           </div>
 
-          {/* Enhanced Header - KEEP THIS ONE */}
-          <header className="bg-white shadow-sm border-b sticky top-0 z-10 backdrop-blur-sm bg-white/95">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center h-16">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-white" />
-                  </div>
-                  <h1 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Task Tracker
-                  </h1>
-                  {/* Add welcome message to header */}
-                  <span className="hidden lg:block text-sm text-gray-600 ml-4">
-                    Welcome back, {user?.user_metadata?.name || 'User'}!
-                  </span>
+          {/* ENHANCED "YOUR TASKS" SECTION WITH INTEGRATED CONTROLS */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-6">
+            {/* Header Row with Title, Search, and New Task Button */}
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">Your Tasks</h2>
+              
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                {/* Search Input */}
+                <div className="relative flex-1 lg:flex-initial">
+                  <input
+                    type="text"
+                    placeholder="🔍 Search tasks..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-4 pr-4 py-3 border border-gray-300 rounded-xl w-full lg:w-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm bg-white/80 backdrop-blur-sm"
+                  />
                 </div>
-                <div className="flex items-center gap-4">
-                  {/* Add New Task button to header */}
-                  <Button
-                    onClick={() => setShowForm(true)}
-                    size="sm"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                  >
-                    + New Task
-                  </Button>
-                  <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm text-gray-600">
-                      {taskCounts.all} tasks
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-600 hidden sm:block">
-                    {user?.user_metadata?.name || user?.email}
-                  </span>
-                  <Button variant="outline" onClick={handleSignOut} size="sm">
-                    Sign Out
-                  </Button>
-                </div>
+                
+                {/* New Task Button */}
+                <Button
+                  onClick={() => setShowForm(true)}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 whitespace-nowrap"
+                >
+                  ✨ New Task
+                </Button>
               </div>
             </div>
-          </header>
-
-
-          {/* Search and Filters */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Your Tasks</h3>
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="px-3 py-2 border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            
+            {/* Task Filters */}
             <TaskFilters
               currentFilter={filter}
               onFilterChange={setFilter}
@@ -214,47 +266,63 @@ export default function Dashboard() {
 
           {/* Task Form */}
           {(showForm || editingTask) && (
-            <TaskForm
-              task={editingTask || undefined}
-              onSubmit={editingTask ? handleEditTask : handleCreateTask}
-              onCancel={() => {
-                setShowForm(false)
-                setEditingTask(null)
-              }}
-            />
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50">
+              <TaskForm
+                task={editingTask || undefined}
+                onSubmit={editingTask ? handleEditTask : handleCreateTask}
+                onCancel={() => {
+                  setShowForm(false)
+                  setEditingTask(null)
+                }}
+              />
+            </div>
           )}
 
-          {/* Task List */}
+          {/* Enhanced Task List */}
           <div className="space-y-4">
             {filteredTasks.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-500">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200/50 p-12 text-center">
                 {tasks.length === 0 ? (
                   <div>
-                    <div className="flex justify-center mb-4">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                        <CheckCircle className="h-8 w-8 text-gray-400" />
+                    <div className="flex justify-center mb-6">
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                        <CheckCircle className="h-10 w-10 text-blue-500" />
                       </div>
                     </div>
-                    <p className="text-lg font-medium text-gray-900 mb-2">No tasks yet!</p>
-                    <p className="text-gray-600 mb-4">Create your first task to get started on your productivity journey.</p>
-                    <Button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                      Create Your First Task
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">No tasks yet!</h3>
+                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                      Create your first task to get started on your productivity journey. 
+                      Organize your life, one task at a time! 🚀
+                    </p>
+                    <Button 
+                      onClick={() => setShowForm(true)} 
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                      size="lg"
+                    >
+                      ✨ Create Your First Task
                     </Button>
                   </div>
                 ) : (
-                  <p>No tasks match your current filter.</p>
+                  <div>
+                    <div className="text-6xl mb-4">🔍</div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No matching tasks</h3>
+                    <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                  </div>
                 )}
               </div>
             ) : (
-              filteredTasks.map(task => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onStatusChange={handleStatusChange}
-                  onEdit={setEditingTask}
-                  onDelete={handleDeleteTask}
-                />
-              ))
+              <div className="grid gap-4">
+                {filteredTasks.map(task => (
+                  <div key={task.id} className="transform hover:scale-[1.02] transition-transform duration-200">
+                    <TaskCard
+                      task={task}
+                      onStatusChange={handleStatusChange}
+                      onEdit={setEditingTask}
+                      onDelete={handleDeleteTask}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
