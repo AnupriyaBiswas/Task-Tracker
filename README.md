@@ -124,30 +124,32 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🏗️ Project Structure
 
-src/
-├── app/
-│ ├── auth/
-│ │ └── callback/ # OAuth callback handler
-│ ├── dashboard/
-│ │ ├── layout.tsx # Dashboard layout with navbar
-│ │ └── page.tsx # Main dashboard page
-│ ├── globals.css # Global styles
-│ ├── layout.tsx # Root layout
-│ └── page.tsx # Landing page
-├── components/
-│ ├── task/
-│ │ ├── TaskCard.tsx # Individual task component
-│ │ ├── TaskFilters.tsx # Filter controls
-│ │ └── TaskForm.tsx # Task creation/edit form
-│ └── ui/ # Reusable UI components
-├── hooks/
-│ └── useAuth.ts # Authentication hook
-├── lib/
-│ ├── supabase/
-│ │ └── client.ts # Supabase client setup
-│ └── tasks.ts # Task service layer
-└── types/
-└── database.ts # TypeScript types
+## 🏗️ Project Structure
+
+**Core App Files:**
+- `src/app/layout.tsx` - Root layout
+- `src/app/page.tsx` - Landing page  
+- `src/app/globals.css` - Global styles
+
+**Authentication:**
+- `src/app/auth/callback/page.tsx` - OAuth callback handler
+
+**Dashboard:**
+- `src/app/dashboard/layout.tsx` - Dashboard layout with navbar
+- `src/app/dashboard/page.tsx` - Main dashboard page
+
+**Task Components:**
+- `src/components/task/TaskCard.tsx` - Individual task component
+- `src/components/task/TaskFilters.tsx` - Filter controls
+- `src/components/task/TaskForm.tsx` - Task creation/edit form
+
+**Utilities:**
+- `src/components/ui/` - Reusable UI components
+- `src/hooks/useAuth.ts` - Authentication hook
+- `src/lib/supabase/client.ts` - Supabase client setup
+- `src/lib/tasks.ts` - Task service layer
+- `src/types/database.ts` - TypeScript types
+
 
 
 ## 🎯 Key Features Breakdown
