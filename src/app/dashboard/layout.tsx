@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from 'lucide-react'
 import { TaskService } from '@/lib/tasks'
+import { createClient } from '@/lib/supabase/client'
 
 export default function DashboardLayout({
   children,
@@ -14,13 +15,14 @@ export default function DashboardLayout({
 }) {
   const { user, loading, signOut } = useAuth()
   const router = useRouter()
-  
+  const supabase = createClient()
+
   // Fixed: Initialize with all properties
-  const [taskCounts, setTaskCounts] = useState({ 
-    all: 0, 
-    todo: 0, 
-    'in-progress': 0, 
-    done: 0 
+  const [taskCounts, setTaskCounts] = useState({
+    all: 0,
+    todo: 0,
+    'in-progress': 0,
+    done: 0
   })
 
   // Load task counts for the navbar
@@ -30,7 +32,7 @@ export default function DashboardLayout({
         try {
           const taskService = new TaskService()
           const tasks = await taskService.getTasks()
-          
+
           // Fixed: Properly update state instead of declaring useState again
           setTaskCounts({
             all: tasks.length,
@@ -48,18 +50,32 @@ export default function DashboardLayout({
     loadTaskCounts()
   }, [user])
 
+  // Fixed: Redirect to landing page instead of signin
   useEffect(() => {
     if (!user && !loading) {
-      router.push('/auth/signin')
+      router.push('/')
     }
   }, [user, loading, router])
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      router.push('/auth/signin')
+      console.log('🚪 Starting sign out process...')
+
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Supabase sign out error:', error)
+      }
+
+      console.log('✅ Sign out completed, redirecting to landing page...')
+
+      // Redirect to landing page instead of signin
+      window.location.href = '/'
+
     } catch (error) {
-      console.error('Sign out failed:', error)
+      console.error('Sign out process failed:', error)
+      // Force redirect to landing page even if sign out fails
+      window.location.href = '/'
     }
   }
 
