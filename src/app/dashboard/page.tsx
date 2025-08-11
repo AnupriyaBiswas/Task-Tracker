@@ -25,25 +25,22 @@ export default function Dashboard() {
   const router = useRouter()
   const taskService = new TaskService()
 
-  // Enhanced loadTasks with better error handling
+  // Fixed loadTasks with useCallback to prevent infinite loops
   const loadTasks = useCallback(async () => {
     try {
       if (!user) {
-        console.log('No user found, skipping task load')
         setLoading(false)
         return
       }
 
-      console.log('🚀 Dashboard: Loading tasks...')
       const data = await taskService.getTasks()
       setTasks(data)
-      console.log('✅ Dashboard: Tasks loaded successfully')
     } catch (error) {
       console.error('❌ Dashboard: Error loading tasks:', error)
       if (error instanceof Error && error.message.includes('Auth session missing')) {
         setUser(null)
         setTasks([])
-        router.push('/auth/signin')
+        router.push('/')
         return
       }
 
@@ -57,44 +54,49 @@ export default function Dashboard() {
     }
   }, [taskService, user, router])
 
-  // Fixed auth state management
+  // Fixed auth state management to prevent continuous checking
   useEffect(() => {
     let mounted = true
 
-    const checkUser = async () => {
+    const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (mounted) {
           if (session?.user) {
             setUser(session.user)
-            loadTasks()
+            // Load tasks only once on initial auth
+            if (tasks.length === 0) {
+              loadTasks()
+            }
           } else {
-            router.push('/auth/signin')
+            router.push('/')
           }
         }
       } catch (error) {
         console.error('Session check failed:', error)
         if (mounted) {
-          router.push('/auth/signin')
+          router.push('/')
         }
       }
     }
 
-    checkUser()
+    initializeAuth()
 
+    // Single auth state listener with proper event filtering
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
-      console.log('🔄 Auth event:', event)
+      // Filter out token refresh events to prevent continuous checking
+      if (event === 'TOKEN_REFRESHED') return
 
       if (event === 'SIGNED_OUT' || !session) {
         setUser(null)
         setTasks([])
-      } else if (session?.user) {
+        router.push('/')
+      } else if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user)
-        if (mounted) {
-          loadTasks()
-        }
+        // Only load tasks on actual sign in, not on page refresh
+        loadTasks()
       }
     })
 
@@ -102,7 +104,7 @@ export default function Dashboard() {
       mounted = false
       subscription.unsubscribe()
     }
-  }, [router, supabase.auth, loadTasks])
+  }, [router]) // Minimal dependencies to prevent re-runs
 
   const handleCreateTask = async (formData: TaskFormData) => {
     try {
@@ -150,11 +152,9 @@ export default function Dashboard() {
     }
   }
 
-  // Fixed sign out function
+  // Fixed sign out function to redirect to landing page
   const handleSignOut = async () => {
     try {
-      console.log('🚪 Starting sign out process...')
-      
       setUser(null)
       setTasks([])
       setLoading(true)
@@ -164,12 +164,11 @@ export default function Dashboard() {
         console.error('Supabase sign out error:', error)
       }
       
-      console.log('✅ Sign out completed, redirecting...')
-      window.location.href = '/auth/signin'
+      window.location.href = '/'
       
     } catch (error) {
       console.error('Sign out process failed:', error)
-      window.location.href = '/auth/signin'
+      window.location.href = '/'
     }
   }
 
@@ -202,8 +201,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      
-
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
           {/* Enhanced Stats Dashboard */}

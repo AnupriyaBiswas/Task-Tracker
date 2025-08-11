@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { CheckCircle } from 'lucide-react'
 import { TaskService } from '@/lib/tasks'
@@ -17,7 +17,6 @@ export default function DashboardLayout({
   const router = useRouter()
   const supabase = createClient()
 
-  // Fixed: Initialize with all properties
   const [taskCounts, setTaskCounts] = useState({
     all: 0,
     todo: 0,
@@ -25,32 +24,32 @@ export default function DashboardLayout({
     done: 0
   })
 
-  // Load task counts for the navbar
-  useEffect(() => {
-    const loadTaskCounts = async () => {
-      if (user) {
-        try {
-          const taskService = new TaskService()
-          const tasks = await taskService.getTasks()
+  // Optimized task count loading with useCallback
+  const loadTaskCounts = useCallback(async () => {
+    if (!user) return
 
-          // Fixed: Properly update state instead of declaring useState again
-          setTaskCounts({
-            all: tasks.length,
-            todo: tasks.filter(t => t.status === 'todo').length,
-            'in-progress': tasks.filter(t => t.status === 'in-progress').length,
-            done: tasks.filter(t => t.status === 'done').length,
-          })
-        } catch (error) {
-          console.error('Failed to load task counts:', error)
-          setTaskCounts({ all: 0, todo: 0, 'in-progress': 0, done: 0 })
-        }
-      }
+    try {
+      const taskService = new TaskService()
+      const tasks = await taskService.getTasks()
+
+      setTaskCounts({
+        all: tasks.length,
+        todo: tasks.filter(t => t.status === 'todo').length,
+        'in-progress': tasks.filter(t => t.status === 'in-progress').length,
+        done: tasks.filter(t => t.status === 'done').length,
+      })
+    } catch (error) {
+      console.error('Failed to load task counts:', error)
+      setTaskCounts({ all: 0, todo: 0, 'in-progress': 0, done: 0 })
     }
-
-    loadTaskCounts()
   }, [user])
 
-  // Fixed: Redirect to landing page instead of signin
+  // Single useEffect for task counts - no auth listener here
+  useEffect(() => {
+    loadTaskCounts()
+  }, [loadTaskCounts])
+
+  // Redirect logic without auth state listener
   useEffect(() => {
     if (!user && !loading) {
       router.push('/')
@@ -59,22 +58,14 @@ export default function DashboardLayout({
 
   const handleSignOut = async () => {
     try {
-      console.log('🚪 Starting sign out process...')
-
-      // Sign out from Supabase
       const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('Supabase sign out error:', error)
       }
-
-      console.log('✅ Sign out completed, redirecting to landing page...')
-
-      // Redirect to landing page instead of signin
+      
       window.location.href = '/'
-
     } catch (error) {
       console.error('Sign out process failed:', error)
-      // Force redirect to landing page even if sign out fails
       window.location.href = '/'
     }
   }
@@ -96,11 +87,9 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* SINGLE UNIFIED NAVBAR */}
       <header className="bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Left Side - Logo and App Name */}
             <div className="flex items-center gap-4">
               <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg">
                 <CheckCircle className="h-6 w-6 text-white" />
@@ -113,14 +102,12 @@ export default function DashboardLayout({
               </div>
             </div>
 
-            {/* Center - Welcome Message */}
             <div className="hidden lg:flex items-center">
               <span className="text-lg text-gray-700 font-medium">
                 Welcome back, {user?.user_metadata?.name || user?.email?.split('@')[0] || 'User'}! 👋
               </span>
             </div>
 
-            {/* Right Side - Task Count and Sign Out */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-50 to-blue-50 rounded-full border border-green-200">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -142,7 +129,6 @@ export default function DashboardLayout({
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
