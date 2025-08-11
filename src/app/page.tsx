@@ -24,6 +24,26 @@ export default function Home() {
     checkUser()
   }, [router, supabase.auth])
 
+  // Direct Google Sign-In Function
+  const handleDirectSignIn = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      
+      if (error) {
+        console.error('OAuth error:', error)
+        alert('Sign in failed. Please try again.')
+      }
+    } catch (error) {
+      console.error('Sign in error:', error)
+      alert('Sign in failed. Please check your connection.')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -51,7 +71,7 @@ export default function Home() {
             </div>
             
             <Button 
-              onClick={() => router.push('/auth/signin')}
+              onClick={handleDirectSignIn}
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               Sign In
@@ -72,7 +92,6 @@ export default function Home() {
 
           {/* Main Content */}
           <div className="relative pt-16 pb-20 text-center">
-            {/* Hero Text */}
             <div className="max-w-4xl mx-auto">
               <div className="flex justify-center mb-8">
                 <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl">
@@ -94,7 +113,7 @@ export default function Home() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
                 <Button 
-                  onClick={() => router.push('/auth/signin')}
+                  onClick={handleDirectSignIn}
                   size="lg"
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300 text-lg px-8 py-4"
                 >
@@ -149,7 +168,7 @@ export default function Home() {
                 Join thousands of users who've transformed their productivity with Tu-Dum
               </p>
               <Button 
-                onClick={() => router.push('/auth/signin')}
+                onClick={handleDirectSignIn}
                 size="lg"
                 variant="outline"
                 className="bg-white text-blue-600 hover:bg-gray-50 border-none shadow-lg text-lg px-8 py-4"
