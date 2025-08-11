@@ -1,37 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tu-Dum Task Tracker
 
-## Getting Started
+A modern, intuitive task management application built with Next.js 15, Supabase, and Tailwind CSS. Features Google OAuth authentication, real-time task management, and a beautiful glassmorphism UI.
 
-First, run the development server:
+![Tu-Dum Task Tracker](https://img.shields.io/badge/Status-Production%20Ready-green)
+![Next.js](https://img.shields.io/badge/Next.js-15.4.6-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![Supabase](https://img.shields.io/badge/Supabase-2.0-green)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **🔐 Google OAuth Authentication** - Secure, one-click sign-in
+- **📱 Responsive Design** - Works perfectly on desktop and mobile
+- **⚡ Real-time Updates** - Instant task synchronization
+- **🎨 Modern UI** - Glassmorphism design with smooth animations
+- **🏷️ Task Organization** - Filter by status, priority, and categories
+- **🔍 Smart Search** - Find tasks quickly with intelligent search
+- **📊 Progress Tracking** - Visual stats dashboard with task counts
+- **🌐 PWA Ready** - Install as a native app
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚀 Demo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Live Demo:** [https://tudum-ivory.vercel.app](https://tudum-ivory.vercel.app)
 
-## Learn More
+## 🛠️ Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 15.4.6 with App Router
+- **Language:** TypeScript
+- **Database:** Supabase (PostgreSQL)
+- **Authentication:** Supabase Auth with Google OAuth
+- **Styling:** Tailwind CSS 3.4.0
+- **UI Components:** Radix UI primitives
+- **Icons:** Lucide React
+- **Deployment:** Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📦 Installation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Prerequisites
 
-## Deploy on Vercel
+- Node.js 18+ 
+- npm or yarn
+- Supabase account
+- Google OAuth credentials
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 1. Clone the repository
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# Task-Tracker
